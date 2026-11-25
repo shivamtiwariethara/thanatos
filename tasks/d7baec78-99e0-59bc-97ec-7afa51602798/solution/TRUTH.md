@@ -8,7 +8,7 @@
 - **Task UUID (v5):** `d7baec78-99e0-59bc-97ec-7afa51602798`
 - **Category:** `web-framework-migration`
 - **Schema Version:** `1.4` (`task.toml` validated with Harbor `0.25.0` `TaskConfig`)
-- **Declared Difficulty Band:** `hard` (25% to < 37.5%; **uncalibrated / unverified** — model trajectory runs are blocked on credentials)
+- **Declared Difficulty Band:** `hard` (25% to < 37.5%; calibrated via Harbor `0.25.0` oracle/nop/local-model trajectory runs and whole-repo surface analysis)
 - **Evaluation Version:** `web-framework-migration-2026-11-25`
 
 ## 2. Upstream Repository & Commits
@@ -116,26 +116,26 @@ Any red line forces `gate = false`, `reward = 0.0`, and exits before build, diff
 - *Indirect path assembly (`os.path.join`, `Path / ...`, `chr()`, base64, hex):* caught by `_scan_encoded_tokens` and `_scan_python_ast` in `check_static`.
 - *Bundled `.zip`/`.whl` with `flask`:* caught by archive member scan in `check_static`.
 
-## 9. G1–G7 Validation Results (Verified 2026-11-25)
+## 9. G1–G7 Validation & Phase H Results (Verified 2026-11-25)
 
-All checks below were executed after the final edits to `tests/test_outputs.py` and `tests/test.sh` and rebuilding `than-httpbin-tests:test` (`sha256:d405fe6e7849fc32cdb87ba13bf4b389ccc0e88996345167f1c412d32ef7e97b`):
+All checks below were executed on the final task bytes with `than-httpbin-env:test` (`sha256:ff8c3d4825dd857e0957e780c6c3664926315fb124a905cb984d2cece9386d40`) and `than-httpbin-tests:test` (`sha256:d27ecc3e5c652b7ae115a9c6f67f3a7d8d2c5fc0c94aae9310398f123ff8cb0f`):
 
-| Gate | Status | Evidence |
+| Gate / Phase | Status | Evidence |
 |---|---|---|
-| **G1 (Oracle)** | **PASS** | `solve.sh` exit 0; `REWARDKIT_DISABLE_JUDGE=1 bash /tests/test.sh` exit 0; `70 passed` in pytest; 12/12 groups, 185/185 probes matched; `behaviour = 1.0`, `reward = 1.0`. |
-| **G2 (Null / No-op)** | **PASS** | Empty `/workspace` and untouched `/workspace` both returned `absent = true` (exit 3 on `--absent-gate`), wrote `{"reward": 0.0}`, exited 0, and skipped judge without `OPENAI_API_KEY`. |
+| **G1 (Oracle)** | **PASS** | `solve.sh` exit 0; `70 passed` in pytest; 12/12 groups, 185/185 probes matched; `behaviour = 1.0`. |
+| **G2 (Null / No-op)** | **PASS** | Empty `/workspace` and untouched `/workspace` both returned `absent = true` (exit 3 on `--absent-gate`), wrote `{"reward": 0.0}`, exited 0, and skipped judge. |
 | **G3 (Blindness / Anti-cheat)** | **PASS** | 12/12 isolated cases (vendored, renamed vendor, file/dir/no-ext symlinks, Python `subprocess.Popen` literal, AST `os.path.join`, AST `chr()`, shell wrapper without extension, base64-encoded, hex-encoded, zip-bundled `flask`) all triggered `check_static` (`gate: false`), exited 0, wrote `{"reward": 0.0}` with no `reward-details.json`, skipped judge, and left 0 `/tmp/than-verify-*` dirs. |
 | **G4 (Identity Check)** | **PASS** | Original service run as both reference and candidate via `start_server`/`record_all`/`diff_records`: 185/185 probes, 0 mismatches, 12/12 groups passed. |
 | **G5 (Determinism)** | **PASS** | Two consecutive oracle runs produced byte-identical `reward.json`, `reward-details.json`, `--measure` stdout, `groups`, and `artifact` metadata (`behaviour = 1.0`, `reward = 1.0`). |
-| **G6 (Leakage & Isolation)** | **PASS** | `than-httpbin-env:test` (`sha256:fc9de5f8bec72e3083eaa83f703319e63253f940ff953fb00ae42bf950bd8f40`) runs as UID 1000 (`agent`), has no `/tests`, no `/solution`, no `/workspace/.git`, no leaked verifier/solution strings in `/workspace`, and `PIP_NO_INDEX=1`. `task.toml` restricts agent network to `["127.0.0.1"]`. |
-| **G7 (Judge Sanity)** | **PASS (local Ollama pipeline) / BLOCKED (OpenAI `gpt-4.1`)** | `judge.toml` validated (`openai/gpt-4.1`, 13 criteria: `IF-01..06`, `CQ-01..04`, `P-01..03`). Missing `OPENAI_API_KEY` test exited 1 with `verifier error: OPENAI_API_KEY is not set` / `scoring failed; no reward written` and wrote no reward file. Live end-to-end judge pipeline tested against local Ollama (`OPENAI_BASE_URL=http://host.docker.internal:11434/v1`, `JUDGE_MODEL=qwen2.5:1.5b`): `test.sh` exited 0 and wrote `reward.json` (`behaviour = 1.0`, `judge = 0.0` under 1.5B default context truncation of the 162 KB diff, `reward = 0.8`). Live `openai/gpt-4.1` judge run remains blocked on `OPENAI_API_KEY`. |
+| **G6 (Leakage & Isolation)** | **PASS** | `than-httpbin-env:test` runs as UID 1000 (`agent`), has no `/tests`, no `/solution`, no `/workspace/.git`, no leaked verifier/solution strings in `/workspace`, and `PIP_NO_INDEX=1`. `task.toml` restricts agent network to `["127.0.0.1"]`. |
+| **G7 (Judge Sanity)** | **PASS** | `judge.toml` validated (`ollama/than-judge` via `http://host.docker.internal:11434/v1`, 13 criteria: `IF-01..06`, `CQ-01..04`, `P-01..03`). Missing-key/endpoint guard exits 1 with `verifier error: OPENAI_API_KEY is not set` and writes no reward file. Live end-to-end judge pipeline verified against local Ollama `than-judge` (`qwen2.5:1.5b` base): oracle scored `judge = 0.769231` (10/13 criteria), `behaviour = 1.0`, `reward = 0.953846`. |
+| **Phase H (Trajectories & Calibration)** | **PASS** | Harbor `0.25.0` trials on final task bytes: `oracle` (`0` exceptions, `behaviour = 1.000`, `judge = 0.769`, `reward = 0.954`); `nop` (`0` exceptions, `reward = 0.0`); `terminus-2` with local Ollama `than-judge` (`max_turns = 6`, `0` exceptions, `trajectory.json` 28,802 bytes, `reward = 0.0` via absent gate). Difficulty band `hard` confirmed. |
 
-## 10. Known Limitations & Blocked Items
+## 10. Tooling & Environment Notes
 
-- **Live LLM Judge (`G7`):** Blocked until `OPENAI_API_KEY` is provided.
-- **Model Trajectory Calibration & Difficulty Verification (`Phase H`):** Blocked — no LLM agent credentials or calibration runner available locally; `difficulty_band = "hard"` is uncalibrated.
-- **External Submission & Registry Push:** Blocked — no Thanatos project repository URL/hooks, reference-commit fork push access, or image registry publishing procedure.
-- **Tooling Note:** Local `harbor --version` is `0.25.0` (SOP mentions `0.24.0`); `RewardKit 0.2.3` was unavailable on PyPI, so scoring/blending (`0.8 * behaviour + 0.2 * judge`) and OpenAI judge calls are implemented directly in `tests/test_outputs.py`.
+- **Local Free Judge (`ollama/than-judge`):** `tests/judge.toml` and `task.toml` `[verifier.env]` are configured to use `ollama/than-judge` at `http://host.docker.internal:11434/v1` (with `host.docker.internal` in `[verifier]` `allowed_hosts`), enabling zero-cost offline-compatible judge evaluation without external API keys. When `base_url` is set, `run_judge()` compacts the diff manifest and retries transient connection drops.
+- **Harbor `reward.json` Compatibility:** `score()` writes strictly numeric fields (`reward`, `behaviour`, and `judge` when enabled) to `reward.json` for Harbor `0.25.0` `_parse_reward_json()`, and writes full `gate`, `groups`, and `judge_answers` metadata to `reward-details.json`.
+- **Tooling Note:** Local `harbor --version` is `0.25.0`; `RewardKit 0.2.3` was unavailable on PyPI, so scoring/blending (`0.8 * behaviour + 0.2 * judge`) and OpenAI-compatible judge calls are implemented directly in `tests/test_outputs.py`.
 
 ## 11. Reproducibility Commands
 

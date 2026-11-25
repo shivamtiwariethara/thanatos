@@ -29,11 +29,11 @@ repository_test_policy = "migratable"
 environment_mode = "separate"
 timeout_sec = 5400
 network_mode = "allowlist"
-allowed_hosts = ["127.0.0.1", "api.openai.com"]
+allowed_hosts = ["127.0.0.1", "host.docker.internal"]
 
 [verifier.env]
-OPENAI_API_KEY = "${OPENAI_API_KEY}"
-JUDGE_MODEL = "openai/gpt-4.1"
+OPENAI_BASE_URL = "http://host.docker.internal:11434/v1"
+JUDGE_MODEL = "ollama/than-judge"
 
 [verifier.environment]
 build_timeout_sec = 3600
@@ -41,7 +41,7 @@ cpus = 4
 memory_mb = 8192
 storage_mb = 20480
 network_mode = "allowlist"
-allowed_hosts = ["127.0.0.1", "api.openai.com"]
+allowed_hosts = ["127.0.0.1", "host.docker.internal"]
 
 [agent]
 timeout_sec = 14400

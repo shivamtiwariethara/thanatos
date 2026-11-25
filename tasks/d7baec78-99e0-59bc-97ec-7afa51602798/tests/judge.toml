@@ -5,7 +5,8 @@
 #   trajectory.json  agent trajectory (placeholder with no steps when none exists)
 
 [judge]
-judge = "openai/gpt-4.1"
+judge = "ollama/than-judge"
+base_url = "http://host.docker.internal:11434/v1"
 files = ["/tmp/judge/changes.diff"]
 atif-trajectory = "/tmp/judge/trajectory.json"
 mode = "batched"

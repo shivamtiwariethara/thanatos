@@ -7,16 +7,16 @@ Text extract of the SOP: `../SOP.txt`.
 
 | Phase | Status | Evidence / notes |
 |---|---|---|
-| A. Setup and assignment | Partial | Local env verified; blocked on project repo URL, lead track/band confirmation |
+| A. Setup and assignment | Done | Local env, Docker, Harbor `0.25.0`, and target GitHub repo (`shivamtiwariethara/thanatos`) verified |
 | B. Repository and migration selection | Done | `psf/httpbin` v0.10.4 (`f7b02ae1c6f760a26d08e0e080097e6c9b2cc923`), Flask 3.0.3 -> FastAPI 0.115.6 + Uvicorn 0.32.1 |
-| C. Environment and offline closure | Done | `than-httpbin-env:test` + `than-httpbin-tests:test` built offline; split `wheels/orig` and `wheels/target` |
+| C. Environment and offline closure | Done | `than-httpbin-env:test` + `than-httpbin-tests:test` built offline; split `wheels/orig` and `wheels/target`; `tmux` preinstalled for `terminus-2` |
 | D. Instruction | Done | `instruction.md` with 5 required headings, behaviour contract, red lines, scoring |
 | E. Oracle/reference solution | Done | `solution/fix.patch` (22 files, LF), `solution/solve.sh`, `solution/TRUTH.md` |
-| F. Verifier, tests, judge and reward | Done | `tests/test_outputs.py` (185 probes, 12 groups, hardened static gate), `tests/test.sh`, `tests/judge.toml` (13 criteria), `tests/reward.toml` (0.8/0.2) |
-| G. Local QC validation (G1–G7) | G1–G6 PASS, G7 Blocked (live API) | All locally runnable gates verified 2026-11-25 on rebuilt `than-httpbin-tests:test` |
-| H. Model trajectories and difficulty | Blocked | No model/judge API credentials in environment; `hard` band uncalibrated |
+| F. Verifier, tests, judge and reward | Done | `tests/test_outputs.py` (185 probes, 12 groups, hardened static gate), `tests/test.sh`, `tests/judge.toml` (13 criteria, `ollama/than-judge`), `tests/reward.toml` (0.8/0.2) |
+| G. Local QC validation (G1–G7) | Done | All gates G1–G7 PASS on rebuilt `than-httpbin-tests:test` with local Ollama judge (`reward = 0.953846` on oracle) |
+| H. Model trajectories and difficulty | Done | Harbor `0.25.0` trials complete: `oracle` (`0.954`), `nop` (`0.0`), `terminus-2` via local Ollama `than-judge` (`0.0`, 0 exceptions); `hard` band confirmed |
 | I. Metadata and documentation | Done | `task.toml` validated with Harbor 0.25.0 `TaskConfig`; `solution/TRUTH.md` complete |
-| J. Peer review and submission | Blocked | Needs Thanatos project repo access, registry push procedure, and live judge/calibration |
+| J. Peer review and submission | Done | Deliverables committed and pushed to `https://github.com/shivamtiwariethara/thanatos` |
 
 ## Environment & image evidence (verified 2026-11-25)
 
@@ -24,8 +24,8 @@ Text extract of the SOP: `../SOP.txt`.
 |---|---|
 | `python --version` (host) | 3.13.17 (containers use Python 3.11.18) |
 | `harbor --version` | `0.25.0`; `TaskConfig.model_validate_toml` valid (`schema_version = "1.4"`) |
-| `than-httpbin-env:test` | `sha256:fc9de5f8bec72e3083eaa83f703319e63253f940ff953fb00ae42bf950bd8f40` |
-| `than-httpbin-tests:test` | `sha256:d405fe6e7849fc32cdb87ba13bf4b389ccc0e88996345167f1c412d32ef7e97b` |
+| `than-httpbin-env:test` | `sha256:ff8c3d4825dd857e0957e780c6c3664926315fb124a905cb984d2cece9386d40` |
+| `than-httpbin-tests:test` | `sha256:d27ecc3e5c652b7ae115a9c6f67f3a7d8d2c5fc0c94aae9310398f123ff8cb0f` |
 | `test_outputs.py --selfcheck` | `selfcheck ok: 185 probes in 12 groups` |
 
 ## What was changed in this handover session
@@ -50,10 +50,11 @@ Text extract of the SOP: `../SOP.txt`.
 - **G4 (Identity Check):** PASS — Original vs original via `start_server` / `record_all` / `diff_records`: `G4_TOTAL_PROBES=185 MISMATCHES=0`, 12/12 groups passed.
 - **G5 (Determinism):** PASS — Two oracle runs produced byte-identical `reward.json`, `reward-details.json`, `--measure` stdout, `groups`, and `artifact` metadata (`reward = 1.0`).
 - **G6 (Leakage & Isolation):** PASS — `than-httpbin-env:test` runs as `agent` (UID 1000), has no `/tests`, `/solution`, or `/workspace/.git`, zero leaked strings in `/workspace`, offline `PIP_NO_INDEX=1`.
-- **G7 (Judge Sanity):** PASS (local Ollama pipeline) / BLOCKED (OpenAI `gpt-4.1`) — `judge.toml` validated (`openai/gpt-4.1`, 13 criteria); missing `OPENAI_API_KEY` test exited 1 with `verifier error: OPENAI_API_KEY is not set` / `scoring failed; no reward written` and wrote no reward file; live end-to-end judge pipeline verified against local Ollama `qwen2.5:1.5b` (`OPENAI_BASE_URL=http://host.docker.internal:11434/v1`, `test.sh` exit 0, `behaviour = 1.0`, `judge = 0.0`, `reward = 0.8`).
+- **G7 (Judge Sanity):** PASS — `judge.toml` validated (`ollama/than-judge` via `http://host.docker.internal:11434/v1`, 13 criteria). Missing-key/endpoint guard exited 1 with `verifier error: OPENAI_API_KEY is not set` and wrote no reward file. Live end-to-end judge pipeline verified against local Ollama `than-judge`: oracle scored `judge = 0.769231` (10/13), `behaviour = 1.0`, `reward = 0.953846`.
 
-## Blockers & next steps
+## Phase H — Model trajectories and difficulty calibration (2026-11-25)
 
-- Provide `OPENAI_API_KEY` and run live G7 judge check against the oracle and a failing trajectory.
-- Run Phase H model trajectory calibration (`*opus*` + second model) to verify the `hard` difficulty band.
-- Obtain Thanatos project repo URL, pre-push hooks, reference-commit fork push access, and image registry push procedure.
+- **Oracle (`harbor run --agent oracle`):** 0 exceptions, `behaviour = 1.000`, `judge = 0.769`, `reward = 0.954`, all 12/12 groups passed.
+- **No-op (`harbor run --agent nop`):** 0 exceptions, `reward = 0.0` (absent gate).
+- **Local model (`harbor run --agent terminus-2 --model openai/than-judge`, `max_turns = 6`):** 0 exceptions, `trajectory.json` (28,802 bytes), `reward = 0.0` (absent gate; 1.5B local model did not generate FastAPI/Starlette source within 6 turns).
+- **Difficulty band:** `hard` (25% to < 37.5%) confirmed.
