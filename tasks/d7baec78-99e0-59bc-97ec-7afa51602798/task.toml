@@ -1,0 +1,64 @@
+schema_version = "1.4"
+
+[task]
+name = "psf/httpbin-flask-to-fastapi"
+version = "1.0.0"
+description = "Migrate httpbin from Flask 3.0.3 with Werkzeug and gunicorn to FastAPI 0.115.6 with uvicorn, removing the old stack from source, build and artifact while every documented HTTP response stays indistinguishable from the original."
+authors = [{ name = "Shivam Tiwari", email = "shivam.tiwari@example.com" }]
+keywords = ["python", "fastapi", "flask", "web-framework", "migration", "differential"]
+
+[metadata]
+uuid_v5 = "d7baec78-99e0-59bc-97ec-7afa51602798"
+category = "web-framework-migration"
+repo = "https://github.com/psf/httpbin"
+base_commit = "f7b02ae1c6f760a26d08e0e080097e6c9b2cc923"
+reference_commit = "7edac6f18dff2e602850cf2053529c7e83067b8c"
+evaluation_version = "web-framework-migration-2026-11-25"
+harbor_version = "0.25.0"
+source_stack = "Flask 3.0.3, Werkzeug 3.0.6, gunicorn 23.0.0"
+target_stack = "FastAPI 0.115.6, uvicorn 0.32.1"
+python_version = "3.11"
+difficulty_band = "hard"
+reference_commit_note = "Local reference commit (base + fix.patch), reproducible with the command in TRUTH.md; not yet pushed to a fork."
+
+[metadata.reward]
+graded_key = "reward"
+
+[verifier]
+repository_test_policy = "migratable"
+environment_mode = "separate"
+timeout_sec = 5400
+network_mode = "allowlist"
+allowed_hosts = ["127.0.0.1", "api.openai.com"]
+
+[verifier.env]
+OPENAI_API_KEY = "${OPENAI_API_KEY}"
+JUDGE_MODEL = "openai/gpt-4.1"
+
+[verifier.environment]
+build_timeout_sec = 3600
+cpus = 4
+memory_mb = 8192
+storage_mb = 20480
+network_mode = "allowlist"
+allowed_hosts = ["127.0.0.1", "api.openai.com"]
+
+[agent]
+timeout_sec = 14400
+network_mode = "allowlist"
+allowed_hosts = ["127.0.0.1"]
+
+[environment]
+build_timeout_sec = 3600
+cpus = 4
+memory_mb = 8192
+storage_mb = 20480
+network_mode = "allowlist"
+allowed_hosts = ["127.0.0.1"]
+
+[[artifacts]]
+source = "/workspace"
+exclude = [".pytest_cache", "__pycache__", ".than-venv", ".than-dist", "dist", "build"]
+
+[[artifacts]]
+source = "/logs/agent"

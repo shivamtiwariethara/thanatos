@@ -1,0 +1,10 @@
+# reward = 0.8 * test_outputs (12 behaviour groups, passed/12)
+#        + 0.2 * judge        (13 criteria, share answered yes)
+#
+# An absent migration or a red-line failure vetoes the score to 0.0 before the
+# judge runs; an infrastructure fault is a verifier error with no reward file.
+
+[[reward]]
+name = "reward"
+aggregation = "weighted-mean"
+weights = { test_outputs = 0.8, judge = 0.2 }
