@@ -50,7 +50,7 @@ Text extract of the SOP: `../SOP.txt`.
 - **G4 (Identity Check):** PASS — Original vs original via `start_server` / `record_all` / `diff_records`: `G4_TOTAL_PROBES=185 MISMATCHES=0`, 12/12 groups passed.
 - **G5 (Determinism):** PASS — Two oracle runs produced byte-identical `reward.json`, `reward-details.json`, `--measure` stdout, `groups`, and `artifact` metadata (`reward = 1.0`).
 - **G6 (Leakage & Isolation):** PASS — `than-httpbin-env:test` runs as `agent` (UID 1000), has no `/tests`, `/solution`, or `/workspace/.git`, zero leaked strings in `/workspace`, offline `PIP_NO_INDEX=1`.
-- **G7 (Judge Sanity):** BLOCKED (live API) — `judge.toml` validated (`openai/gpt-4.1`, 13 criteria); missing `OPENAI_API_KEY` test exited 1 with `verifier error: OPENAI_API_KEY is not set` / `scoring failed; no reward written` and wrote no reward file.
+- **G7 (Judge Sanity):** PASS (local Ollama pipeline) / BLOCKED (OpenAI `gpt-4.1`) — `judge.toml` validated (`openai/gpt-4.1`, 13 criteria); missing `OPENAI_API_KEY` test exited 1 with `verifier error: OPENAI_API_KEY is not set` / `scoring failed; no reward written` and wrote no reward file; live end-to-end judge pipeline verified against local Ollama `qwen2.5:1.5b` (`OPENAI_BASE_URL=http://host.docker.internal:11434/v1`, `test.sh` exit 0, `behaviour = 1.0`, `judge = 0.0`, `reward = 0.8`).
 
 ## Blockers & next steps
 

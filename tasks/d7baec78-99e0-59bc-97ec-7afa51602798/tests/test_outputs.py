@@ -1647,11 +1647,12 @@ def _judge_prompt(criteria, diff, trajectory):
 
 
 def run_judge(judge_dir, criteria):
+    base_url = os.environ.get("OPENAI_BASE_URL", "").strip().rstrip("/")
     api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
+    if not api_key and not base_url:
         raise VerifierError("OPENAI_API_KEY is not set")
     config = tomllib.loads(JUDGE_PATH.read_text(encoding="utf-8"))
-    model = config.get("judge", {}).get("judge", "openai/gpt-4.1")
+    model = os.environ.get("JUDGE_MODEL", "").strip() or config.get("judge", {}).get("judge", "openai/gpt-4.1")
     if "/" in model:
         model = model.split("/", 1)[1]
     judge_dir = Path(judge_dir)
@@ -1666,17 +1667,19 @@ def run_judge(judge_dir, criteria):
             {"role": "user", "content": _judge_prompt(criteria, diff, trajectory)},
         ],
     }
+    endpoint = (base_url + "/chat/completions") if base_url else "https://api.openai.com/v1/chat/completions"
+    headers = {"Content-Type": "application/json"}
+    if api_key or base_url:
+        headers["Authorization"] = "Bearer %s" % (api_key or "ollama")
     request = urllib.request.Request(
-        "https://api.openai.com/v1/chat/completions",
+        endpoint,
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": "Bearer %s" % api_key,
-        },
+        headers=headers,
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
+        timeout_sec = 600 if base_url else 180
+        with urllib.request.urlopen(request, timeout=timeout_sec) as response:
             body = json.loads(response.read().decode("utf-8"))
     except (urllib.error.URLError, OSError, ValueError) as exc:
         raise VerifierError("judge request failed: %s" % exc) from exc
